@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "X4g0PKtl2krBcSo1vcLZSPNcqoMhhDujWbu2QtJX2+4=",
+  "Source": "todolistServer",
+  "BasePath": "_content/todolistServer",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
