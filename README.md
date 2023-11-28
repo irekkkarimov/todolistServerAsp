@@ -4,4 +4,4 @@ Used technologies:\
 EntityFramework Core\
 AutoMapper Library\
 PostgreSQL\
-JWT Token\
+JWT Token
