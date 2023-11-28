@@ -5,15 +5,19 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 using todolistServer.Models;
+using todolistServer.Services;
 
 const string myAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+// Default
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
+
+// Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
@@ -26,9 +30,18 @@ builder.Services.AddSwaggerGen(options =>
     
     options.OperationFilter<SecurityRequirementsOperationFilter>();
 });
+
+// Database (Postgres)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DataBaseConnection")));
+
+// AutoMapper library
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
+// Custom services
+builder.Services.AddScoped<IJwtHandlerService, JwtHandlerService>();
+
+// Authentication using JWT token
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -42,6 +55,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Cors
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: myAllowSpecificOrigins,
@@ -55,6 +69,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Specific
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Configure the HTTP request pipeline.

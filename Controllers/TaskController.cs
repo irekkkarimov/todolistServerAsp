@@ -7,6 +7,7 @@ using todolistServer.DTOs;
 using todolistServer.Models;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using todolistServer.Services;
 using Task = todolistServer.Models.Task;
 
 namespace todolistServer.Controllers;
@@ -18,32 +19,40 @@ public class TaskController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IJwtHandlerService _jwtHandlerService;
 
-    public TaskController(ApplicationDbContext context, IMapper mapper)
+    public TaskController(ApplicationDbContext context, IMapper mapper, IJwtHandlerService jwtHandlerService)
     {
         _context = context;
         _mapper = mapper;
+        _jwtHandlerService = jwtHandlerService;
     }
 
+    [Authorize]
     [HttpGet]
     [Route("GetAll")]
-    public IActionResult GetAll([FromQuery(Name = "userId")] int userId)
+    public IActionResult GetAll()
     {
+        var fetchedUserId = _jwtHandlerService.FetchUserId();
+        if (fetchedUserId.Item1)
+            Forbid();
+        
         var tasksDto = _context.Tasks
             .Include(i => i.User)
-            .Where(i => i.User.UserId == userId)
+            .Where(i => i.User.UserId == fetchedUserId.Item2)
             .Select(i => _mapper.Map<TaskDto>(i))
             .ToList();
 
         return Ok(new { tasks = tasksDto });
     }
 
+    [Authorize]
     [HttpPost]
     [Route("Create")]
     public async Task<IActionResult> Create(
         [FromBody] TaskCreateDto taskCreateDto)
     {
-        var fetchedUserId = FetchUserId();
+        var fetchedUserId = _jwtHandlerService.FetchUserId();
         if (fetchedUserId.Item1)
             Forbid();
 
@@ -60,7 +69,7 @@ public class TaskController : ControllerBase
     [Route("Delete")]
     public async Task<IActionResult> Delete([FromQuery(Name = "taskId")] int taskId)
     {
-        var fetchedUserId = FetchUserId();
+        var fetchedUserId = _jwtHandlerService.FetchUserId();
         if (!fetchedUserId.Item1)
             return Forbid();
 
@@ -79,28 +88,5 @@ public class TaskController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { message = "Successfully deleted" });
 
-    }
-
-    [NonAction]
-    private (bool, int) FetchUserId()
-    {
-        // Fetching jwt token from header "Authorization"
-        var token = HttpContext.Request.Headers.Authorization
-            .ToString().Split(" ")[1];
-
-        // Making new instance of JwtSecurityToken with current token
-        // and getting all claims of jwt
-        var jwtSecurityToken = new JwtSecurityToken(jwtEncodedString: token);
-        var decoded = jwtSecurityToken.Claims
-            .Select(i => new { i.Type, i.Value })
-            .ToList();
-
-        // If jwt decoded doesn't contain claim "userid", then return false
-        if (decoded.All(i => i.Type != "userid"))
-            return (false, 0);
-
-        // If it contains claim "userid", then setting its value to userid variable and returning it
-        var userId = int.Parse(decoded.First(i => i.Type == "userid").Value);
-        return (true, userId);
     }
 }
