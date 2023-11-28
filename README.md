@@ -1,6 +1,6 @@
 # Server on ASP.NET Core for todolist
 
-Used technologies:\
+**Used technologies:**\
 EntityFramework Core\
 AutoMapper Library\
 PostgreSQL\
